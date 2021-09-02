@@ -36,6 +36,13 @@ def initialize_board():
 	# Board[4][4] = 'wP'
 	# Board[5][5] = 'wP'
 
+def custom_initialization():
+	Board[0][0] = 'wR'
+	Board[0][7] = 'wR'
+	Board[7][0] = 'bR'
+	Board[7][7] = 'bR'
+
+
 # Prints the board (useful for debugging)
 def print_board():
 	print()
@@ -51,7 +58,7 @@ def print_board():
 
 # Make a move given the string note, written in chess notation
 def make_move(note):
-	global turn
+	global turn, destination_row, destination_col, origin_row, origin_col
 	# Make sure input is a string of at least 2 characters
 	if not isinstance(note, str) or len(note) < 2:
 		raise SyntaxError('Invalid chess notation: ' + str(note))
@@ -139,10 +146,14 @@ def make_move(note):
 	# If they are moving a rook
 	elif note[0] == 'R':
 		piece = turn + 'R'
+		capturing = False
+
+		if len(note) < 3:
+			raise SyntaxError('Invalid chess notation: ' + str(note))
 
 		# If the rook is capturing
 		if note[1] == 'x' or (len(note) > 2 and note[2] == 'x'):
-			
+			capturing = True
 			x_index = 1 if note[1] == 'x' else 2
 
 			if len(note) < 4 or note[x_index + 1] not in FILES or note[x_index + 2] not in RANKS:
@@ -151,69 +162,92 @@ def make_move(note):
 			destination_col = FILES.index(note[x_index + 1])
 			destination_row = RANKS.index(note[x_index + 2])
 
-			# find the possible rooks
-			possible_origins = []
-			# check the rows below it on the same column
-			for i in range(destination_row - 1, -1, -1):
-				if Board[i][destination_col] == piece:
-					possible_origins.append((i, destination_col))
-					break
-				elif Board[i][destination_col] != '  ':
-					break
-			# check the rows above it on the same column
-			for i in range(destination_row + 1, BOARD_SIZE):
-				if Board[i][destination_col] == piece:
-					possible_origins.append((i, destination_col))
-					break
-				elif Board[i][destination_col] != '  ':
-					break
-			# check the columns to the left of it on the same row
-			for i in range(destination_col - 1, -1, -1):
-				if Board[destination_row][i] == piece:
-					possible_origins.append((destination_row, i))
-					break
-				elif Board[destination_row][i] != '  ':
-					break
-			# check the columns to the right of it on the same row
-			for i in range(destination_col + 1, BOARD_SIZE):
-				if Board[destination_row][i] == piece:
-					possible_origins.append((destination_row, i))
-					break
-				elif Board[destination_row][i] != '  ':
-					break
+		# Otherwise
+		else:
+			# If there was a clarifier
+			if len(note) > 3 and note[3] in RANKS:
+				if note[2] not in FILES:
+					raise SyntaxError('Invalid chess notation: ' + str(note))
+				destination_col = FILES.index(note[2])
+				destination_row = RANKS.index(note[3])
+			# If there was not a clarifier
+			else:
+				if note[1] not in FILES or note[2] not in RANKS:
+					raise SyntaxError('Invalid chess notation: ' + str(note))
+				destination_col = FILES.index(note[1])
+				destination_row = RANKS.index(note[2])
 
-			if len(possible_origins) == 0:
-				raise SyntaxError('Invalid move: ' + str(note))
 
-			origin_row = possible_origins[0][0]
-			origin_col = possible_origins[0][1]
+		# find the possible rooks
+		possible_origins = []
+		# check the rows below it on the same column
+		for i in range(destination_row - 1, -1, -1):
+			if Board[i][destination_col] == piece:
+				possible_origins.append((i, destination_col))
+				break
+			elif Board[i][destination_col] != '  ':
+				break
+		# check the rows above it on the same column
+		for i in range(destination_row + 1, BOARD_SIZE):
+			if Board[i][destination_col] == piece:
+				possible_origins.append((i, destination_col))
+				break
+			elif Board[i][destination_col] != '  ':
+				break
+		# check the columns to the left of it on the same row
+		for i in range(destination_col - 1, -1, -1):
+			if Board[destination_row][i] == piece:
+				possible_origins.append((destination_row, i))
+				break
+			elif Board[destination_row][i] != '  ':
+				break
+		# check the columns to the right of it on the same row
+		for i in range(destination_col + 1, BOARD_SIZE):
+			if Board[destination_row][i] == piece:
+				possible_origins.append((destination_row, i))
+				break
+			elif Board[destination_row][i] != '  ':
+				break
 
-			# if we need to resolve ambiguity
-			if len(possible_origins) >= 2:
-				if note[1] not in RANKS and note[1] not in FILES:
-					raise SyntaxError('Ambiguity in move : ' + str(note))
+		if len(possible_origins) == 0:
+			raise SyntaxError('Invalid move: ' + str(note))
 
-				if note[1] in RANKS:
-					resolved = False
-					for possibility in possible_origins:
-						if possibility[0] == RANKS.index(note[1]):
-							origin_row = possibility[0]
-							origin_col = possibility[1]
-							resolved = True
-					
-					if not resolved:
-						raise SyntaxError('Invalid move : ' + str(note))
+		origin_row = possible_origins[0][0]
+		origin_col = possible_origins[0][1]
 
-				elif note[1] in FILES:
-					resolved = False
-					for possibility in possible_origins:
-						if possibility[1] == FILES.index(note[1]):
-							origin_row = possibility[0]
-							origin_col = possibility[1]
-							resolved = True
-					
-					if not resolved:
-						raise SyntaxError('Invalid move : ' + str(note))
+		# if we need to resolve ambiguity
+		if len(possible_origins) >= 2:
+			if len(note) <= 3 or (note[1] not in RANKS and note[1] not in FILES):
+				raise SyntaxError('Ambiguity in move: ' + str(note))
+
+			if note[1] in RANKS:
+				resolved = False
+				for possibility in possible_origins:
+					if possibility[0] == RANKS.index(note[1]):
+						origin_row = possibility[0]
+						origin_col = possibility[1]
+						resolved = True
+				
+				if not resolved:
+					raise SyntaxError('Invalid move: ' + str(note))
+
+			elif note[1] in FILES:
+				resolved = False
+				for possibility in possible_origins:
+					if possibility[1] == FILES.index(note[1]):
+						origin_row = possibility[0]
+						origin_col = possibility[1]
+						resolved = True
+				
+				if not resolved:
+					raise SyntaxError('Invalid move: ' + str(note))
+
+		if (capturing and Board[origin_row][origin_col] == '  ') or \
+		   (not capturing and Board[origin_row][origin_col] != '  '):
+		   raise SyntaxError('Invalid chess notation: ' + str(note))
+
+		Board[origin_row][origin_col] = '  '
+		Board[destination_row][destination_col] = piece
 
 	# If they are moving a knight
 	elif note[0] == 'N':
@@ -246,7 +280,8 @@ def make_move(note):
 		turn = 'w'
 
 
-initialize_board()
+# initialize_board()
+custom_initialization()
 print_board()
 while True:
     move = input('Move: ')
