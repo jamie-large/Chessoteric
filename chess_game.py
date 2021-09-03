@@ -1,4 +1,4 @@
-# Plays chess
+# Given proper chess notation (PGN), will simulate the chess game
 # For use with the chessoteric programming language
 # Created by Jamie Large in 2021
 
@@ -37,10 +37,10 @@ def initialize_board():
 	# Board[5][5] = 'wP'
 
 def custom_initialization():
-	Board[0][0] = 'wR'
-	Board[0][7] = 'wR'
-	Board[7][0] = 'bR'
-	Board[7][7] = 'bR'
+	# Board[0][0] = 'wB'
+	Board[0][7] = 'wB'
+	Board[7][0] = 'bB'
+	# Board[7][7] = 'bB'
 
 
 # Prints the board (useful for debugging)
@@ -58,7 +58,7 @@ def print_board():
 
 # Make a move given the string note, written in chess notation
 def make_move(note):
-	global turn, destination_row, destination_col, origin_row, origin_col
+	global Board, turn, destination_row, destination_col, origin_row, origin_col
 	# Make sure input is a string of at least 2 characters
 	if not isinstance(note, str) or len(note) < 2:
 		raise SyntaxError('Invalid chess notation: ' + str(note))
@@ -242,8 +242,8 @@ def make_move(note):
 				if not resolved:
 					raise SyntaxError('Invalid move: ' + str(note))
 
-		if (capturing and Board[origin_row][origin_col] == '  ') or \
-		   (not capturing and Board[origin_row][origin_col] != '  '):
+		if (capturing and Board[destination_row][destination_col] == '  ') or \
+		   (not capturing and Board[destination_row][destination_col] != '  '):
 		   raise SyntaxError('Invalid chess notation: ' + str(note))
 
 		Board[origin_row][origin_col] = '  '
@@ -254,8 +254,119 @@ def make_move(note):
 		piece = turn + 'N'
 
 	# If they are moving a bishop
+	# TODO: Major ambiguity
 	elif note[0] == 'B':
 		piece = turn + 'B'
+		capturing = False
+
+		if len(note) < 3:
+			raise SyntaxError('Invalid chess notation: ' + str(note))
+
+		# If the bishop is capturing
+		if note[1] == 'x' or (len(note) > 2 and note[2] == 'x'):
+			capturing = True
+			x_index = 1 if note[1] == 'x' else 2
+
+			if len(note) < 4 or note[x_index + 1] not in FILES or note[x_index + 2] not in RANKS:
+				raise SyntaxError('Invalid chess notation: ' + str(note))
+
+			destination_col = FILES.index(note[x_index + 1])
+			destination_row = RANKS.index(note[x_index + 2])
+
+		# Otherwise
+		else:
+			# If there was a clarifier
+			if len(note) > 3 and note[3] in RANKS:
+				if note[2] not in FILES:
+					raise SyntaxError('Invalid chess notation: ' + str(note))
+				destination_col = FILES.index(note[2])
+				destination_row = RANKS.index(note[3])
+			# If there was not a clarifier
+			else:
+				if note[1] not in FILES or note[2] not in RANKS:
+					raise SyntaxError('Invalid chess notation: ' + str(note))
+				destination_col = FILES.index(note[1])
+				destination_row = RANKS.index(note[2])
+
+
+		# find the possible bishops
+		possible_origins = []
+		# check the diagonal below and to the left
+		for i in range(1, 8):
+			if destination_row - i < 0 or destination_col - i < 0:
+				break
+			if Board[destination_row - i][destination_col - i] == piece:
+				possible_origins.append((destination_row - i, destination_col - i))
+				break
+			elif Board[i][destination_col] != '  ':
+				break
+		# check the diagonal below and to the right
+		for i in range(1, 8):
+			if destination_row - i < 0 or destination_col + i > 7:
+				break
+			if Board[destination_row - i][destination_col + i] == piece:
+				possible_origins.append((destination_row - i, destination_col + i))
+				break
+			elif Board[i][destination_col] != '  ':
+				break
+		# check the diagonal above and to the right
+		for i in range(1, 8):
+			if destination_row + i > 7 or destination_col + i > 7:
+				break
+			if Board[destination_row + i][destination_col + i] == piece:
+				possible_origins.append((destination_row + i, destination_col + i))
+				break
+			elif Board[i][destination_col] != '  ':
+				break
+		# check the diagonal above and to the left
+		for i in range(1, 8):
+			if destination_row + i > 7 or destination_col - i < 0:
+				break
+			if Board[destination_row + i][destination_col - i] == piece:
+				possible_origins.append((destination_row + i, destination_col - i))
+				break
+			elif Board[i][destination_col] != '  ':
+				break
+
+		if len(possible_origins) == 0:
+			raise SyntaxError('Invalid move: ' + str(note))
+
+		origin_row = possible_origins[0][0]
+		origin_col = possible_origins[0][1]
+
+		# if we need to resolve ambiguity
+		if len(possible_origins) >= 2:
+			if len(note) <= 3 or (note[1] not in RANKS and note[1] not in FILES):
+				raise SyntaxError('Ambiguity in move: ' + str(note))
+
+			if note[1] in RANKS:
+				resolved = False
+				for possibility in possible_origins:
+					if possibility[0] == RANKS.index(note[1]):
+						origin_row = possibility[0]
+						origin_col = possibility[1]
+						resolved = True
+				
+				if not resolved:
+					raise SyntaxError('Invalid move: ' + str(note))
+
+			elif note[1] in FILES:
+				resolved = False
+				for possibility in possible_origins:
+					if possibility[1] == FILES.index(note[1]):
+						origin_row = possibility[0]
+						origin_col = possibility[1]
+						resolved = True
+				
+				if not resolved:
+					raise SyntaxError('Invalid move: ' + str(note))
+
+		if (capturing and Board[destination_row][destination_col] == '  ') or \
+		   (not capturing and Board[destination_row][destination_col] != '  '):
+		   raise SyntaxError('Invalid chess notation: ' + str(note))
+
+		Board[origin_row][origin_col] = '  '
+		Board[destination_row][destination_col] = piece
 
 	# If they are moving a queen
 	# Note: ambiguity of 3 queens
