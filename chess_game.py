@@ -156,7 +156,7 @@ def make_move(note):
 			capturing = True
 			x_index = 1 if note[1] == 'x' else 2
 
-			if len(note) < 4 or note[x_index + 1] not in FILES or note[x_index + 2] not in RANKS:
+			if len(note) < x_index + 3 or note[x_index + 1] not in FILES or note[x_index + 2] not in RANKS:
 				raise SyntaxError('Invalid chess notation: ' + str(note))
 
 			destination_col = FILES.index(note[x_index + 1])
@@ -250,8 +250,98 @@ def make_move(note):
 		Board[destination_row][destination_col] = piece
 
 	# If they are moving a knight
+	# TODO: Major ambiguity
 	elif note[0] == 'N':
 		piece = turn + 'N'
+		capturing = False
+
+		if len(note) < 3:
+			raise SyntaxError('Invalid chess notation: ' + str(note))
+
+		# If the knight is capturing
+		if note[1] == 'x' or (len(note) > 2 and note[2] == 'x'):
+			capturing = True
+			x_index = 1 if note[1] == 'x' else 2
+
+			if len(note) < x_index + 3 or note[x_index + 1] not in FILES or note[x_index + 2] not in RANKS:
+				raise SyntaxError('Invalid chess notation: ' + str(note))
+
+			destination_col = FILES.index(note[x_index + 1])
+			destination_row = RANKS.index(note[x_index + 2])
+
+		# Otherwise
+		else:
+			# If there was a clarifier
+			if len(note) > 3 and note[3] in RANKS:
+				if note[2] not in FILES:
+					raise SyntaxError('Invalid chess notation: ' + str(note))
+				destination_col = FILES.index(note[2])
+				destination_row = RANKS.index(note[3])
+			# If there was not a clarifier
+			else:
+				if note[1] not in FILES or note[2] not in RANKS:
+					raise SyntaxError('Invalid chess notation: ' + str(note))
+				destination_col = FILES.index(note[1])
+				destination_row = RANKS.index(note[2])
+
+
+		# find the possible knights
+		possible_origins = []
+		locations = [(destination_row + 2, destination_col + 1), (destination_row + 2, destination_col - 1),
+					 (destination_row + 1, destination_col + 2), (destination_row + 1, destination_col - 2),
+					 (destination_row - 1, destination_col + 2), (destination_row - 1, destination_col - 2),
+					 (destination_row - 2, destination_col + 1), (destination_row - 2, destination_col - 1)]
+		for r, c in locations:
+			if r >= 0 and r <= 7 and c >= 0 and c <= 7 and Board[r][c] == piece:
+				possible_origins.append((r, c))
+
+
+		if len(possible_origins) == 0:
+			raise SyntaxError('Invalid move: ' + str(note))
+
+		origin_row = possible_origins[0][0]
+		origin_col = possible_origins[0][1]
+
+		# if we need to resolve ambiguity
+		if len(possible_origins) >= 2:
+			if len(note) <= 3 or (note[1] not in RANKS and note[1] not in FILES):
+				raise SyntaxError('Ambiguity in move: ' + str(note))
+
+			if note[1] in FILES and note[2] in RANKS:
+				origin_row = FILES.index(note[1])
+				origin_col = FILES.index(note[2])
+
+				if Board[origin_row][origin_col] != piece:
+					raise SyntaxError('Invalid move: ' + str(note))
+
+			elif note[1] in RANKS:
+				resolved = False
+				for possibility in possible_origins:
+					if possibility[0] == RANKS.index(note[1]):
+						origin_row = possibility[0]
+						origin_col = possibility[1]
+						resolved = True
+				
+				if not resolved:
+					raise SyntaxError('Invalid move: ' + str(note))
+
+			elif note[1] in FILES:
+				resolved = False
+				for possibility in possible_origins:
+					if possibility[1] == FILES.index(note[1]):
+						origin_row = possibility[0]
+						origin_col = possibility[1]
+						resolved = True
+				
+				if not resolved:
+					raise SyntaxError('Invalid move: ' + str(note))
+
+		if (capturing and Board[destination_row][destination_col] == '  ') or \
+		   (not capturing and Board[destination_row][destination_col] != '  '):
+		   raise SyntaxError('Invalid chess notation: ' + str(note))
+
+		Board[origin_row][origin_col] = '  '
+		Board[destination_row][destination_col] = piece
 
 	# If they are moving a bishop
 	# TODO: Major ambiguity
@@ -267,7 +357,7 @@ def make_move(note):
 			capturing = True
 			x_index = 1 if note[1] == 'x' else 2
 
-			if len(note) < 4 or note[x_index + 1] not in FILES or note[x_index + 2] not in RANKS:
+			if len(note) < x_index + 3 or note[x_index + 1] not in FILES or note[x_index + 2] not in RANKS:
 				raise SyntaxError('Invalid chess notation: ' + str(note))
 
 			destination_col = FILES.index(note[x_index + 1])
@@ -298,7 +388,7 @@ def make_move(note):
 			if Board[destination_row - i][destination_col - i] == piece:
 				possible_origins.append((destination_row - i, destination_col - i))
 				break
-			elif Board[i][destination_col] != '  ':
+			elif Board[destination_row - i][destination_col - i] != '  ':
 				break
 		# check the diagonal below and to the right
 		for i in range(1, 8):
@@ -307,7 +397,7 @@ def make_move(note):
 			if Board[destination_row - i][destination_col + i] == piece:
 				possible_origins.append((destination_row - i, destination_col + i))
 				break
-			elif Board[i][destination_col] != '  ':
+			elif Board[destination_row - i][destination_col + i] != '  ':
 				break
 		# check the diagonal above and to the right
 		for i in range(1, 8):
@@ -316,7 +406,7 @@ def make_move(note):
 			if Board[destination_row + i][destination_col + i] == piece:
 				possible_origins.append((destination_row + i, destination_col + i))
 				break
-			elif Board[i][destination_col] != '  ':
+			elif Board[destination_row + i][destination_col + i] != '  ':
 				break
 		# check the diagonal above and to the left
 		for i in range(1, 8):
@@ -325,7 +415,7 @@ def make_move(note):
 			if Board[destination_row + i][destination_col - i] == piece:
 				possible_origins.append((destination_row + i, destination_col - i))
 				break
-			elif Board[i][destination_col] != '  ':
+			elif Board[destination_row + i][destination_col - i] != '  ':
 				break
 
 		if len(possible_origins) == 0:
@@ -339,7 +429,14 @@ def make_move(note):
 			if len(note) <= 3 or (note[1] not in RANKS and note[1] not in FILES):
 				raise SyntaxError('Ambiguity in move: ' + str(note))
 
-			if note[1] in RANKS:
+			if note[1] in FILES and note[2] in RANKS:
+				origin_row = FILES.index(note[1])
+				origin_col = FILES.index(note[2])
+
+				if Board[origin_row][origin_col] != piece:
+					raise SyntaxError('Invalid move: ' + str(note))
+
+			elif note[1] in RANKS:
 				resolved = False
 				for possibility in possible_origins:
 					if possibility[0] == RANKS.index(note[1]):
@@ -368,8 +465,8 @@ def make_move(note):
 		Board[origin_row][origin_col] = '  '
 		Board[destination_row][destination_col] = piece
 
-	# If they are moving a queen
-	# Note: ambiguity of 3 queens
+	# TODO: If they are moving a queen
+	# TODO: Major ambiguity
 	elif note[0] == 'Q':
 		piece = turn + 'Q'
 
@@ -391,8 +488,8 @@ def make_move(note):
 		turn = 'w'
 
 
-# initialize_board()
-custom_initialization()
+initialize_board()
+# custom_initialization()
 print_board()
 while True:
     move = input('Move: ')
