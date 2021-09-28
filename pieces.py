@@ -31,7 +31,7 @@ class Piece:
 
 class Rook(Piece):
 	def can_move(self, destination_row, destination_column):
-		if not super().can_move(destination_row, destination_column):
+		if not Piece.can_move(self, destination_row, destination_column):
 			return False
 
 		if self.row != destination_row and self.column != destination_column:
@@ -53,7 +53,7 @@ class Rook(Piece):
 
 class Bishop(Piece):
 	def can_move(self, destination_row, destination_column):
-		if not super().can_move(destination_row, destination_column):
+		if not Piece.can_move(self, destination_row, destination_column):
 			return False
 
 		if abs(self.row - destination_row) != abs(self.column - destination_column):
@@ -75,11 +75,21 @@ class Bishop(Piece):
 
 class Knight(Piece):
 	def can_move(self, destination_row, destination_column):
-		if not super().can_move(destination_row, destination_column):
+		if not Piece.can_move(self, destination_row, destination_column):
 			return False
 
-		if (abs(self.row - destination_row) == 1 and abs(self.column - destination_column) == 2) or \
-		   (abs(self.row - destination_row) == 2 and abs(self.column - destination_column) == 1):
-		   return True
+		return (abs(self.row - destination_row) == 1 and abs(self.column - destination_column) == 2) or \
+		       (abs(self.row - destination_row) == 2 and abs(self.column - destination_column) == 1)
 
-		return False
+
+class Queen(Rook, Bishop):
+	def can_move(self, destination_row, destination_column):
+		return Rook.can_move(self, destination_row, destination_column) or \
+		       Bishop.can_move(self, destination_row, destination_column)
+
+class King(Piece):
+	def can_move(self, destination_row, destination_column):
+		if not Piece.can_move(self, destination_row, destination_column):
+			return False
+
+		return (abs(self.row - destination_row) <= 1 and abs(self.column - destination_column) <= 1)

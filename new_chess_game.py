@@ -17,15 +17,19 @@ def print_board(pieces):
 		print('Black\'s turn')
 
 pieces = [Rook("wR", 0, 0), Rook("wR", 0, 7), 
+		  Knight("wK", 0, 1), Knight("wK", 0, 6),
 		  Bishop("wB", 0, 2), Bishop("wB", 0, 5),
+		  Queen("wQ", 0, 3), King("wK", 0, 4),
 		  Rook("bR", 7, 0), Rook("bR", 7, 7), 
-		  Bishop("bB", 7, 2), Bishop("wB", 7, 5),]
+		  Knight("bK", 7, 1), Knight("bK", 7, 6),
+		  Bishop("bB", 7, 2), Bishop("wB", 7, 5),
+		  Queen("bQ", 7, 3), King("bK", 7, 4)]
 
 for piece in pieces:
 	Board[piece.row][piece.column] = piece.name
 
 
-test_piece = pieces[2]
+test_piece = pieces[7]
 print_board(pieces)
 for i in range(8):
 	for j in range(8):
