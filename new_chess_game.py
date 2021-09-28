@@ -23,14 +23,17 @@ pieces = [Rook("wR", 0, 0), Rook("wR", 0, 7),
 		  Rook("bR", 7, 0), Rook("bR", 7, 7), 
 		  Knight("bK", 7, 1), Knight("bK", 7, 6),
 		  Bishop("bB", 7, 2), Bishop("wB", 7, 5),
-		  Queen("bQ", 7, 3), King("bK", 7, 4)]
+		  Queen("bQ", 7, 3), King("bK", 7, 4)] + \
+		  [Pawn("wP", 1, i) for i in range(8)] + \
+		  [Pawn("bP", 6, i) for i in range(8)]
 
 for piece in pieces:
 	Board[piece.row][piece.column] = piece.name
 
 
-test_piece = pieces[7]
+test_piece = pieces[25]
 print_board(pieces)
+print(f"Piece {test_piece.name} at {test_piece.row}, {test_piece.column}")
 for i in range(8):
 	for j in range(8):
 		if i != test_piece.row or j != test_piece.column:

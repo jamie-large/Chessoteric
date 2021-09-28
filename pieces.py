@@ -93,3 +93,32 @@ class King(Piece):
 			return False
 
 		return (abs(self.row - destination_row) <= 1 and abs(self.column - destination_column) <= 1)
+
+class Pawn(Piece):
+	def can_move(self, destination_row, destination_column):
+		if not Piece.can_move(self, destination_row, destination_column):
+			return False
+
+		home_row = 1 if self.name[0] == 'w' else 6
+		direction = 1 if self.name[0] == 'w' else -1
+		opposite_color = 'w' if self.name[0] == 'b' else 'b'
+		capturing = True if Board[destination_row][destination_column][0] == opposite_color else False
+
+		# Capturing: move up 1 row and to left or right 1 column
+		if capturing and destination_row == self.row + direction and \
+		             abs(destination_column - self.column) == 1:
+		    return True
+
+		# Not capturing: move on same column to empty space 1 above or 2 above if on home row
+		if not capturing:
+			if destination_column != self.column:
+				return False
+			if self.row == home_row:
+				if destination_row == self.row + direction * 2 and \
+				   Board[self.row + direction][self.column] == '  ' and \
+				   Board[self.row + direction * 2][self.column] == '  ':
+					return True
+			if destination_row == self.row + direction and Board[self.row + direction][self.column] == '  ':
+				return True
+
+		return False
