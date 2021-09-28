@@ -17,6 +17,10 @@ class Piece:
 
 	# Check if piece can move
 	def can_move(self, destination_row, destination_column):
+		if destination_row > 7 or destination_row < 0:
+			raise ValueError(f"Row must be between 0 and 7")
+		if destination_column > 7 or destination_column < 0:
+			raise ValueError(f"Column must be between 0 and 7")
 		if self.row == destination_row and self.column == destination_column:
 			raise ValueError(f"Piece {self.name} already at {self.row}, {self.column}")
 
@@ -69,24 +73,13 @@ class Bishop(Piece):
 		
 		return True
 
-def Knight(Piece):
+class Knight(Piece):
 	def can_move(self, destination_row, destination_column):
 		if not super().can_move(destination_row, destination_column):
 			return False
 
-		if abs(self.row - destination_row) == abs(self.column - destination_column):
-			end = abs(self.row - destination_row)
-			row_increment = int((destination_row - self.row) / end)
-			column_increment = int((destination_column - self.column) / end)
-			row_counter = row_increment
-			column_counter = column_increment
-			
-			for i in range(end):
-				if Board[self.row + row_counter][self.column + column_counter] != '  ':
-					return False
-				row_counter += row_increment
-				column_counter += column_increment
-			
-			return True
+		if (abs(self.row - destination_row) == 1 and abs(self.column - destination_column) == 2) or \
+		   (abs(self.row - destination_row) == 2 and abs(self.column - destination_column) == 1):
+		   return True
 
 		return False
