@@ -7,11 +7,13 @@ class Piece:
 		self.name = name
 		self.row = row
 		self.column = column
+		self.has_moved = False
 
 	# Move piece to destination_row, destination_column
 	def move(self, destination_row, destination_column):
 		self.row = destination_row
 		self.column = destination_column
+		self.has_moved = True
 
 	# Check if piece can move
 	def can_move(self, destination_row, destination_column, Board):
@@ -86,10 +88,6 @@ class Queen(Rook, Bishop):
 		       Bishop.can_move(self, destination_row, destination_column, Board)
 
 class King(Piece):
-	def __init__(self, name, row, column):
-		Piece.__init__(self, name, row, column)
-		self.has_moved = False
-
 	def is_checked(self, destination_row, destination_column, pieces, Board):
 		original_piece = Board[destination_row][destination_column]
 		Board[destination_row][destination_column] = self.name
