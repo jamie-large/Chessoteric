@@ -2,8 +2,6 @@
 # For use with the chessoteric programming language
 # Created by Jamie Large in 2021
 
-Board = [['  ' for x in range(8)] for y in range(8)]
-
 class Piece:
 	def __init__(self, name, row, column):
 		self.name = name
@@ -16,7 +14,7 @@ class Piece:
 		self.column = destination_column
 
 	# Check if piece can move
-	def can_move(self, destination_row, destination_column):
+	def can_move(self, destination_row, destination_column, Board):
 		if destination_row > 7 or destination_row < 0:
 			raise ValueError(f"Row must be between 0 and 7")
 		if destination_column > 7 or destination_column < 0:
@@ -30,8 +28,8 @@ class Piece:
 		return True
 
 class Rook(Piece):
-	def can_move(self, destination_row, destination_column):
-		if not Piece.can_move(self, destination_row, destination_column):
+	def can_move(self, destination_row, destination_column, Board):
+		if not Piece.can_move(self, destination_row, destination_column, Board):
 			return False
 
 		if self.row != destination_row and self.column != destination_column:
@@ -52,8 +50,8 @@ class Rook(Piece):
 		return True
 
 class Bishop(Piece):
-	def can_move(self, destination_row, destination_column):
-		if not Piece.can_move(self, destination_row, destination_column):
+	def can_move(self, destination_row, destination_column, Board):
+		if not Piece.can_move(self, destination_row, destination_column, Board):
 			return False
 
 		if abs(self.row - destination_row) != abs(self.column - destination_column):
@@ -74,8 +72,8 @@ class Bishop(Piece):
 		return True
 
 class Knight(Piece):
-	def can_move(self, destination_row, destination_column):
-		if not Piece.can_move(self, destination_row, destination_column):
+	def can_move(self, destination_row, destination_column, Board):
+		if not Piece.can_move(self, destination_row, destination_column, Board):
 			return False
 
 		return (abs(self.row - destination_row) == 1 and abs(self.column - destination_column) == 2) or \
@@ -83,20 +81,37 @@ class Knight(Piece):
 
 
 class Queen(Rook, Bishop):
-	def can_move(self, destination_row, destination_column):
-		return Rook.can_move(self, destination_row, destination_column) or \
-		       Bishop.can_move(self, destination_row, destination_column)
+	def can_move(self, destination_row, destination_column, Board):
+		return Rook.can_move(self, destination_row, destination_column, Board) or \
+		       Bishop.can_move(self, destination_row, destination_column, Board)
 
 class King(Piece):
-	def can_move(self, destination_row, destination_column):
-		if not Piece.can_move(self, destination_row, destination_column):
+	def __init__(self, name, row, column):
+		Piece.__init__(self, name, row, column)
+		self.has_moved = False
+
+	def is_checked(self, destination_row, destination_column, pieces, Board):
+		original_piece = Board[destination_row][destination_column]
+		Board[destination_row][destination_column] = self.name
+		for p in pieces.values():
+			for piece in p:
+				if piece.name[0] != self.name[0] and \
+				   (piece.row != destination_row or piece.column != destination_column) and \
+				   piece.can_move(destination_row, destination_column, Board):
+					Board[destination_row][destination_column] = original_piece
+					return True
+		Board[destination_row][destination_column] = original_piece
+		return False
+
+	def can_move(self, destination_row, destination_column, Board):
+		if not Piece.can_move(self, destination_row, destination_column, Board):
 			return False
 
 		return (abs(self.row - destination_row) <= 1 and abs(self.column - destination_column) <= 1)
 
 class Pawn(Piece):
-	def can_move(self, destination_row, destination_column):
-		if not Piece.can_move(self, destination_row, destination_column):
+	def can_move(self, destination_row, destination_column, Board):
+		if not Piece.can_move(self, destination_row, destination_column, Board):
 			return False
 
 		home_row = 1 if self.name[0] == 'w' else 6
