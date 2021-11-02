@@ -1,3 +1,8 @@
+# Given proper chess notation (PGN), will simulate the chess game
+# For use with the chessoteric programming language
+# Created by Jamie Large in 2021
+import sys
+
 from pieces import *
 
 # EN PASSANT
@@ -7,23 +12,20 @@ FILES = ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h')
 RANKS = ('1', '2', '3', '4', '5', '6', '7', '8')
 
 def print_board(Board, turn, turn_number):
+	t = "White's turn" if turn == 'w' else "Black's turn"
 	print()
-	print(f"{turn_number}.")
+	print(f"{turn_number}. {t}")
 	print('  ', end='')
 	print([x + ' ' for x in FILES])
 	for i in range(7, -1, -1):
 		print(i+1, end=' ')
-		print(Board[i])
-	if (turn == 'w'):
-		print('White\'s turn')
-	else:
-		print('Black\'s turn')
+		print([p.name if p is not None else '  ' for p in Board[i]])
 
 def update_board(pieces):
-	Board = [['  ' for x in range(8)] for y in range(8)]
+	Board = [[None for x in range(8)] for y in range(8)]
 	for p in pieces.values():
 		for piece in p:
-			Board[piece.row][piece.column] = piece.name
+			Board[piece.row][piece.column] = piece
 	return Board
 
 def initialize_game():
@@ -94,6 +96,9 @@ def parse_code(code):
 			capturing, checking, checkmate, end_symbol)
 
 def make_move(code, Board, pieces, turn):
+	for pawn in pieces[turn + 'P']:
+		pawn.en_passant = False
+
 	checking = checkmate = False
 	# Check for castle
 	if (len(code) >= 3 and code[0:3] == "O-O") or (len(code) >= 5 and code[0:5] == "O-O-O"):
@@ -109,7 +114,7 @@ def make_move(code, Board, pieces, turn):
 		end = max(rook_col, king.column)
 
 		for i in range(start, end):
-			if Board[rook_row][i] != '  ' or king.is_checked(rook_row, i, pieces, Board):
+			if Board[rook_row][i] is not None or king.is_checked(rook_row, i, pieces, Board):
 				raise SyntaxError(f"Invalid castle: {code}")
 
 		if (len(code) >= 5 and code[0:5] == "O-O-O"):
@@ -158,13 +163,20 @@ def make_move(code, Board, pieces, turn):
 		# If it's capturing, validate that it says so and make the capture
 		opposite_turn = 'w' if turn == 'b' else 'b'
 		destination_piece = Board[destination_row][destination_column]
-		if destination_piece == opposite_turn + 'K':
-			raise SyntaxError(f"Cannot capture the king: {code}")
-		if destination_piece[0] == opposite_turn:
+		if destination_piece is not None:
+			if destination_piece.name == opposite_turn + 'K':
+				raise SyntaxError(f"Cannot capture the king: {code}")
+			if destination_piece.name[0] == opposite_turn:
+				if not capturing:
+					raise SyntaxError(f"Move captures a piece: {code}")
+				pieces[destination_piece.name] = [p for p in pieces[destination_piece.name] if p.row != destination_row or p.column != destination_column]
+		# En passant capture
+		elif possible_pieces[0].name[1] == 'P' and possible_pieces[0].valid_en_passant(destination_row, destination_column, Board):
+			direction = 1 if turn == 'w' else -1
 			if not capturing:
 				raise SyntaxError(f"Move captures a piece: {code}")
-			pieces[destination_piece] = [p for p in pieces[destination_piece] if p.row != destination_row or p.column != destination_column]
-		
+			pieces[opposite_turn + 'P'] = [p for p in pieces[opposite_turn + 'P'] if p.row != destination_row - direction or p.column != destination_column]		
+
 		# Move the piece
 		possible_pieces[0].move(destination_row, destination_column)
 		Board = update_board(pieces)
@@ -234,5 +246,7 @@ def play_game(filename):
 			turn = 'w' if turn == 'b' else 'b'
 			print_board(Board, turn, int(turn_number))
 
-
-play_game('games/game1.txt')
+if len(sys.argv) > 1:
+	play_game(sys.argv[1])
+else:
+	play_game('games/game1.txt')
