@@ -5,9 +5,6 @@ import sys
 
 from pieces import *
 
-# EN PASSANT
-# PAWN CONVERSION
-
 FILES = ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h')
 RANKS = ('1', '2', '3', '4', '5', '6', '7', '8')
 
@@ -55,7 +52,7 @@ def parse_code(code):
 	destination_row = destination_column = ""
 	origin_row = origin_column = ""
 	capturing = checking = checkmate = False
-	end_symbol = ""
+	end_symbol = promotion_piece = ""
 
 	i = 0 if piece_name == 'P' else 1
 	
@@ -76,6 +73,12 @@ def parse_code(code):
 		origin_row = destination_row
 		destination_row = RANKS.index(code[i])
 		i += 1
+	if i < len(code) and code[i] == '=':
+		i += 1
+		if i == len(code) or code[i] not in ('R', 'N', 'B', 'Q'):
+			raise SyntaxError(f"Must specify promotion piece: {code}")
+		promotion_piece = code[i]
+		i += 1
 	if i < len(code) and code[i] == '+':
 		checking = True
 		i += 1
@@ -93,7 +96,7 @@ def parse_code(code):
 		raise SyntaxError(f"Invalid chess notation: {code}")		
 
 	return (piece_name, origin_row, origin_column, destination_row, destination_column, 
-			capturing, checking, checkmate, end_symbol)
+			capturing, checking, checkmate, end_symbol, promotion_piece)
 
 def make_move(code, Board, pieces, turn):
 	for pawn in pieces[turn + 'P']:
@@ -141,7 +144,7 @@ def make_move(code, Board, pieces, turn):
 
 	else:
 		piece_name, origin_row, origin_column, destination_row, destination_column, \
-		capturing, checking, checkmate, end_symbol = parse_code(code)
+		capturing, checking, checkmate, end_symbol, promotion_piece = parse_code(code)
 
 		possible_pieces = [p for p in pieces[turn + piece_name] if p.can_move(destination_row, destination_column, Board)]
 
@@ -179,6 +182,21 @@ def make_move(code, Board, pieces, turn):
 
 		# Move the piece
 		possible_pieces[0].move(destination_row, destination_column)
+		# Promote a pawn if necessary
+		if promotion_piece != "":
+			if possible_pieces[0].name[1] != 'P' or destination_row not in (0, 7):
+				raise SyntaxError(f"Invalid pawn promotion")
+			pieces[possible_pieces[0].name] = [p for p in pieces[possible_pieces[0].name] if p.row != destination_row or p.column != destination_column]
+			if promotion_piece == 'Q':
+				pieces[turn + 'Q'].append(Queen(turn + 'Q', destination_row, destination_column))
+			elif promotion_piece == 'N':
+				pieces[turn + 'N'].append(Knight(turn + 'N', destination_row, destination_column))
+			elif promotion_piece == 'R':
+				pieces[turn + 'R'].append(Rook(turn + 'R', destination_row, destination_column))
+			elif promotion_piece == 'B':
+				pieces[turn + 'B'].append(Bishop(turn + 'B', destination_row, destination_column))
+		elif promotion_piece == "" and possible_pieces[0].name[1] == 'P' and destination_row in (0, 7):
+			raise SyntaxError(f"Must specify pawn for promotion")
 		Board = update_board(pieces)
 
 		# If the current king is in check
