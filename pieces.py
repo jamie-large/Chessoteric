@@ -1,6 +1,6 @@
 # Class definitions for each chess piece
 # For use with the chessoteric programming language
-# Created by Jamie Large in 2021
+# Created by Jamie Large in 2022
 
 class Piece:
 	def __init__(self, name, row, column):

@@ -1,8 +1,6 @@
 # Given proper chess notation (PGN), will simulate the chess game
 # For use with the chessoteric programming language
-# Created by Jamie Large in 2021
-import sys
-
+# Created by Jamie Large in 2022
 from pieces import *
 
 FILES = ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h')
@@ -238,33 +236,4 @@ def make_move(code, Board, pieces, turn):
 	elif not in_check and checking:
 		raise SyntaxError(f"Invalid check symbol: {code}")
 	
-	return Board
-
-
-def play_game(filename):
-	with open(filename, "r") as f:
-		full_text = f.read()
-		words = full_text.split()
-		for i in range(len(words)):
-			if i % 3 == 0 and i != len(words) - 1:
-				if not words[i][:-1].isnumeric() or words[i][-1] != '.' or int(words[i][:-1]) != i / 3 + 1:
-					raise SyntaxError(f"Incorrect number: {words[i]}")
-		if words[-1] not in ('1-0', '0-1', '1/2-1/2'):
-			raise SyntaxError(f"Invalid ending: {words[-1]}")
-
-		moves = [words[i] for i in range(len(words)) if i % 3 != 0][:-1]
-
-		Board, pieces, turn = initialize_game()
-		turn_number = 0.5
-		print_board(Board, turn, int(turn_number))
-		
-		for move in moves:
-			turn_number += 0.5
-			Board = make_move(move, Board, pieces, turn)
-			turn = 'w' if turn == 'b' else 'b'
-			print_board(Board, turn, int(turn_number))
-
-if len(sys.argv) > 1:
-	play_game(sys.argv[1])
-else:
-	play_game('games/game1.txt')
+	return Board, end_symbol, in_checkmate
